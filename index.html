@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모드파티 주문 분석</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f5f5f5;
+  --white: #ffffff;
+  --gray-50: #fafafa;
+  --gray-100: #f0f0f0;
+  --gray-200: #e0e0e0;
+  --gray-300: #c8c8c8;
+  --gray-400: #a0a0a0;
+  --gray-500: #707070;
+  --gray-700: #404040;
+  --gray-900: #1a1a1a;
+  --male: #4a7fc1;
+  --male-light: #dce8f5;
+  --female: #c16a7a;
+  --female-light: #f5dce0;
+  --border: #e8e8e8;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--gray-900);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+aside {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.sidebar-header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.sidebar-section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 10px;
+}
+
+/* Date Range */
+.date-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.date-inputs label {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-bottom: 2px;
+}
+
+input[type="date"] {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  outline: none;
+  cursor: pointer;
+}
+input[type="date"]:focus { border-color: var(--gray-400); background: white; }
+
+.date-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.quick-btn {
+  padding: 4px 9px;
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--gray-500);
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.quick-btn:hover, .quick-btn.active {
+  border-color: var(--gray-900);
+  color: var(--gray-900);
+  background: var(--gray-900);
+  color: white;
+}
+
+/* Filter toggles */
+.filter-group {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  flex: 1;
+  padding: 7px 0;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--gray-500);
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.filter-btn:hover { border-color: var(--gray-300); color: var(--gray-700); }
+.filter-btn.active-m {
+  border-color: var(--male);
+  background: var(--male-light);
+  color: var(--male);
+}
+.filter-btn.active-f {
+  border-color: var(--female);
+  background: var(--female-light);
+  color: var(--female);
+}
+.filter-btn.active-all {
+  border-color: var(--gray-900);
+  background: var(--gray-900);
+  color: white;
+}
+
+/* Age group checkboxes */
+.age-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.age-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.age-check-item input[type="checkbox"] {
+  display: none;
+}
+
+.check-box {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.age-check-item input:checked + .check-box {
+  background: var(--gray-900);
+  border-color: var(--gray-900);
+}
+.age-check-item input:checked + .check-box::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 7px;
+  border: 1.5px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+.check-label {
+  font-size: 13px;
+  color: var(--gray-700);
+}
+.check-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+/* Summary in sidebar */
+.sidebar-summary {
+  padding: 16px 20px;
+  margin-top: auto;
+  background: var(--gray-50);
+  border-top: 1px solid var(--border);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.summary-row:last-child { margin-bottom: 0; }
+.summary-key { font-size: 12px; color: var(--gray-400); }
+.summary-val { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.summary-val.m { color: var(--male); }
+.summary-val.f { color: var(--female); }
+
+/* MAIN */
+main {
+  margin-left: 260px;
+  flex: 1;
+  padding: 28px 28px 48px;
+  min-width: 0;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.filter-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  padding: 3px 10px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* CARDS */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-400);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1;
+}
+
+.kpi-value.m { color: var(--male); }
+.kpi-value.f { color: var(--female); }
+
+.kpi-sub {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 5px;
+}
+
+/* CHARTS ROW */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+}
+
+.panel-full {
+  grid-column: 1 / -1;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-bottom: 18px;
+}
+
+/* BUTTERFLY */
+.bf-container { }
+
+.bf-header {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr;
+  gap: 0;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--gray-400);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.bf-header .lbl-m { text-align: right; padding-right: 10px; color: var(--male); }
+.bf-header .lbl-f { text-align: left; padding-left: 10px; color: var(--female); }
+.bf-header .lbl-g { text-align: center; }
+
+.bf-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr;
+  gap: 0;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bf-age {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-500);
+  text-align: center;
+}
+
+.bf-side-m {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-right: 1px solid var(--gray-100);
+  padding-right: 4px;
+}
+
+.bf-side-f {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.bar-m {
+  height: 22px;
+  background: var(--male);
+  border-radius: 3px 0 0 3px;
+  opacity: 0.8;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bar-f {
+  height: 22px;
+  background: var(--female);
+  border-radius: 0 3px 3px 0;
+  opacity: 0.8;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bf-num {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 20px;
+}
+.bf-num.m { color: var(--male); text-align: right; }
+.bf-num.f { color: var(--female); }
+
+/* STACKED */
+.sc-row { margin-bottom: 14px; }
+.sc-row:last-child { margin-bottom: 0; }
+.sc-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.sc-age { font-size: 12px; font-weight: 500; color: var(--gray-600); }
+.sc-counts { font-size: 12px; color: var(--gray-400); }
+
+.sc-bar-wrap {
+  height: 18px;
+  background: var(--gray-100);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+}
+.sc-m {
+  height: 100%;
+  background: var(--male);
+  opacity: 0.7;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sc-f {
+  height: 100%;
+  background: var(--female);
+  opacity: 0.7;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sc-pct-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+}
+.sc-pct {
+  font-size: 11px;
+}
+.sc-pct.m { color: var(--male); }
+.sc-pct.f { color: var(--female); text-align: right; }
+
+/* DAILY TREND */
+.trend-wrap {
+  position: relative;
+  height: 140px;
+  margin-top: 8px;
+}
+
+/* TABLE */
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.detail-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--gray-100);
+}
+.detail-table th.r { text-align: right; }
+.detail-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+}
+.detail-table td.age-col {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.detail-table td.num { text-align: right; }
+.detail-table td.mval { text-align: right; font-weight: 600; color: var(--male); }
+.detail-table td.fval { text-align: right; font-weight: 600; color: var(--female); }
+.detail-table tr:hover td { background: var(--gray-50); }
+
+.ratio-cell { min-width: 100px; }
+.ratio-bar-wrap {
+  height: 4px;
+  background: var(--gray-100);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.ratio-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--male) 0%, var(--female) 100%);
+  border-radius: 2px;
+}
+
+/* EMPTY */
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gray-400);
+  font-size: 13px;
+}
+
+canvas { display: block; }
+
+/* 노 데이터 태그 */
+.no-data-bar {
+  height: 22px;
+  background: var(--gray-100);
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  aside { width: 220px; }
+  main { margin-left: 220px; }
+  .kpi-grid { grid-template-columns: repeat(2,1fr); }
+  .charts-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside>
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Mod Party</div>
+    <div class="sidebar-title">주문 분석 대시보드</div>
+  </div>
+
+  <!-- Date -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">기간 설정</div>
+    <div class="date-inputs">
+      <div>
+        <label>시작일</label>
+        <input type="date" id="dateFrom" value="2026-03-11">
+      </div>
+      <div>
+        <label>종료일</label>
+        <input type="date" id="dateTo" value="2026-03-19">
+      </div>
+    </div>
+    <div class="date-quick">
+      <button class="quick-btn" data-range="3">최근 3일</button>
+      <button class="quick-btn" data-range="7">최근 7일</button>
+      <button class="quick-btn active" data-range="all">전체</button>
+    </div>
+  </div>
+
+  <!-- Gender Filter -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">성별 필터</div>
+    <div class="filter-group">
+      <button class="filter-btn active-all" id="gAll">전체</button>
+      <button class="filter-btn" id="gMale">남성</button>
+      <button class="filter-btn" id="gFemale">여성</button>
+    </div>
+  </div>
+
+  <!-- Age Group Filter -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">연령대 필터</div>
+    <div class="age-checks" id="ageChecks"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="sidebar-summary" id="sidebarSummary"></div>
+</aside>
+
+<!-- MAIN -->
+<main>
+  <div class="main-header">
+    <div class="page-title">주문 현황</div>
+    <div class="filter-tags" id="filterTags"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">총 주문</div>
+      <div class="kpi-value" id="kTotal">—</div>
+      <div class="kpi-sub" id="kTotalSub">필터 적용 결과</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">남성</div>
+      <div class="kpi-value m" id="kMale">—</div>
+      <div class="kpi-sub" id="kMalePct">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">여성</div>
+      <div class="kpi-value f" id="kFemale">—</div>
+      <div class="kpi-sub" id="kFemalePct">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">주요 연령대</div>
+      <div class="kpi-value" id="kTopAge" style="font-size:20px;padding-top:6px">—</div>
+      <div class="kpi-sub" id="kTopAgeSub">—</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="panel">
+      <div class="panel-title">연령대별 남·여 분포</div>
+      <div class="bf-header">
+        <div class="lbl-g">연령대</div>
+        <div class="lbl-m">← 남성</div>
+        <div class="lbl-f">여성 →</div>
+      </div>
+      <div id="butterfly"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">연령대별 구성 비율</div>
+      <div id="stacked"></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="panel panel-full">
+      <div class="panel-title">일별 주문 추이</div>
+      <div class="trend-wrap">
+        <canvas id="trendCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="panel panel-full">
+      <div class="panel-title">연령대별 상세 집계</div>
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>연령대</th>
+            <th class="r">남성</th>
+            <th class="r">여성</th>
+            <th class="r">합계</th>
+            <th>남:녀 비율</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+</div>
+
+<script>
+const RAW = [{"date":"2026-03-19","birth_year":2000,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-19","birth_year":1995,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-19","birth_year":1983,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1997,"gender":"여","product":"[벚꽃 시즌] 21일 남성 조기 마감! 수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":44000},{"date":"2026-03-18","birth_year":1991,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":77000},{"date":"2026-03-18","birth_year":1999,"gender":"여","product":"[벚꽃 시즌] 21일 남성 조기 마감! 수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":44000},{"date":"2026-03-18","birth_year":1995,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-18","birth_year":1990,"gender":"남","product":"[벚꽃 시즌] 3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":79000},{"date":"2026-03-18","birth_year":1989,"gender":"남","product":"[벚꽃 시즌] 21일 남녀 마감 임박!! 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":79000},{"date":"2026-03-18","birth_year":1986,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1988,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1993,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-18","birth_year":1988,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1994,"gender":"남","product":"[벚꽃 시즌] 대구 동성로에서 즐기는 2030 2:2 로테이션 와인파티_E14","amount":77000},{"date":"2026-03-18","birth_year":1982,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1992,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-18","birth_year":1984,"gender":"남","product":"[벚꽃 시즌] 3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":79000},{"date":"2026-03-18","birth_year":1990,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1988,"gender":"남","product":"[벚꽃 시즌] 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":79000},{"date":"2026-03-18","birth_year":1985,"gender":"남","product":"[벚꽃 시즌] 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":79000},{"date":"2026-03-18","birth_year":1990,"gender":"남","product":"[벚꽃 시즌] 3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":74000},{"date":"2026-03-18","birth_year":1992,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":64000},{"date":"2026-03-18","birth_year":1994,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":78000},{"date":"2026-03-18","birth_year":1982,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":63000},{"date":"2026-03-18","birth_year":1994,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":78000},{"date":"2026-03-18","birth_year":1988,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":63000},{"date":"2026-03-18","birth_year":1984,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1986,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1992,"gender":"남","product":"[벚꽃 시즌] 수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-18","birth_year":1990,"gender":"남","product":"[벚꽃 시즌] 천안 쌍용동에서 즐기는 2030 2:2 로테이션 와인파티_E10","amount":79000},{"date":"2026-03-18","birth_year":1986,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1992,"gender":"여","product":"[벚꽃 시즌] 3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":48000},{"date":"2026-03-18","birth_year":1995,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-18","birth_year":1988,"gender":"남","product":"[벚꽃 시즌] 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":79000},{"date":"2026-03-18","birth_year":1994,"gender":"남","product":"[벚꽃 시즌] 천안 쌍용동에서 즐기는 2030 2:2 로테이션 와인파티_E10","amount":73000},{"date":"2026-03-18","birth_year":1992,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-18","birth_year":1997,"gender":"남","product":"[벚꽃 시즌] 수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-18","birth_year":1999,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1988,"gender":"남","product":"[벚꽃 시즌] 3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":79000},{"date":"2026-03-17","birth_year":1991,"gender":"남","product":"[벚꽃 시즌] 수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-17","birth_year":1999,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1996,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1992,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-17","birth_year":2000,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":2000,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1994,"gender":"여","product":"[벚꽃 시즌] 3040 수원 행리단길에서 즐기는 2:2 로테이션 와인파티_E07","amount":49000},{"date":"2026-03-17","birth_year":1999,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1991,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-17","birth_year":1993,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-17","birth_year":1993,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-17","birth_year":1988,"gender":"남","product":"[벚꽃 시즌] 3040 수원 행리단길에서 즐기는 2:2 로테이션 와인파티_E07","amount":79000},{"date":"2026-03-17","birth_year":1994,"gender":"남","product":"[벚꽃 시즌] 수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-17","birth_year":1984,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-17","birth_year":1987,"gender":"남","product":"[벚꽃 시즌] 3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":77000},{"date":"2026-03-17","birth_year":1998,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1989,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-17","birth_year":1993,"gender":"남","product":"[벚꽃 시즌] 광주에서 즐기는 2030 2:2 로테이션 와인파티_E12","amount":79000},{"date":"2026-03-17","birth_year":1991,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":55000},{"date":"2026-03-17","birth_year":1987,"gender":"남","product":"[벚꽃 시즌] 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":78000},{"date":"2026-03-17","birth_year":1993,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-17","birth_year":1988,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":62000},{"date":"2026-03-17","birth_year":1985,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":60000},{"date":"2026-03-17","birth_year":1996,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-17","birth_year":1991,"gender":"여","product":"[벚꽃 시즌] 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-17","birth_year":1988,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-17","birth_year":1983,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-17","birth_year":1982,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":64000},{"date":"2026-03-17","birth_year":1996,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-17","birth_year":1993,"gender":"남","product":"천안 쌍용동에서 즐기는 2030 2:2 로테이션 와인파티_E10","amount":44000},{"date":"2026-03-16","birth_year":1996,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-16","birth_year":1986,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1993,"gender":"남","product":"3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":78000},{"date":"2026-03-16","birth_year":1982,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1986,"gender":"남","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":79000},{"date":"2026-03-16","birth_year":1991,"gender":"남","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":76000},{"date":"2026-03-16","birth_year":1992,"gender":"여","product":"21일 남성 조기마감! 3040 천안에서 즐기는 2:2 로테이션 와인파티_E11","amount":49000},{"date":"2026-03-16","birth_year":1997,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-16","birth_year":1986,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1993,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-16","birth_year":1993,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1993,"gender":"남","product":"수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-16","birth_year":1994,"gender":"여","product":"부산에서 즐기는 2030 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-16","birth_year":1989,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-16","birth_year":1990,"gender":"남","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":74000},{"date":"2026-03-16","birth_year":1994,"gender":"여","product":"3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":49000},{"date":"2026-03-16","birth_year":1984,"gender":"남","product":"3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":79000},{"date":"2026-03-16","birth_year":1990,"gender":"남","product":"수원에서 즐기는 2030 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-16","birth_year":1989,"gender":"남","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":63000},{"date":"2026-03-16","birth_year":1982,"gender":"남","product":"3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":79000},{"date":"2026-03-16","birth_year":1997,"gender":"여","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":44000},{"date":"2026-03-16","birth_year":1997,"gender":"여","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":44000},{"date":"2026-03-16","birth_year":1994,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-16","birth_year":1985,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-16","birth_year":1993,"gender":"여","product":"[벚꽃 시즌] 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1997,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":39000},{"date":"2026-03-16","birth_year":1985,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1983,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1988,"gender":"남","product":"3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":79000},{"date":"2026-03-16","birth_year":1987,"gender":"여","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1990,"gender":"여","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1998,"gender":"여","product":"대전에서 즐기는 2:2 로테이션 와인파티_E08","amount":44000},{"date":"2026-03-16","birth_year":1997,"gender":"여","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":44000},{"date":"2026-03-16","birth_year":1986,"gender":"여","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-16","birth_year":1997,"gender":"여","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":44000},{"date":"2026-03-15","birth_year":1994,"gender":"남","product":"대구 동성로에서 즐기는 2:2 로테이션 와인파티_E14","amount":79000},{"date":"2026-03-15","birth_year":1993,"gender":"여","product":"대구에서 즐기는 3040 2:2 로테이션 와인파티_E15","amount":49000},{"date":"2026-03-15","birth_year":1993,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":78000},{"date":"2026-03-15","birth_year":1998,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":78000},{"date":"2026-03-15","birth_year":1990,"gender":"여","product":"3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":49000},{"date":"2026-03-15","birth_year":1989,"gender":"여","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1991,"gender":"남","product":"천안 쌍용동에서 즐기는 2:2 로테이션 와인파티_E10","amount":79000},{"date":"2026-03-15","birth_year":1998,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-15","birth_year":1992,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-15","birth_year":1982,"gender":"남","product":"3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":78000},{"date":"2026-03-15","birth_year":1986,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1982,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":63000},{"date":"2026-03-15","birth_year":1993,"gender":"남","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-15","birth_year":1987,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1987,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":64000},{"date":"2026-03-15","birth_year":1991,"gender":"남","product":"역삼 2030 시그널쿡 싱글끼리 요리를 한다면?_N01","amount":61000},{"date":"2026-03-15","birth_year":1994,"gender":"여","product":"역삼 2030 시그널쿡 싱글끼리 요리를 한다면?_N01","amount":65000},{"date":"2026-03-15","birth_year":1996,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-15","birth_year":1983,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-15","birth_year":1994,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-15","birth_year":1992,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-15","birth_year":1987,"gender":"남","product":"3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":79000},{"date":"2026-03-15","birth_year":2000,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-15","birth_year":1982,"gender":"남","product":"3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":79000},{"date":"2026-03-15","birth_year":1994,"gender":"남","product":"울산 2030 삼산동 2:2 로테이션 와인파티_E18","amount":79000},{"date":"2026-03-15","birth_year":1997,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-15","birth_year":1989,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":2001,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2030 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-15","birth_year":1989,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1991,"gender":"남","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-15","birth_year":1988,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-15","birth_year":1988,"gender":"여","product":"3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":49000},{"date":"2026-03-15","birth_year":1994,"gender":"여","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1991,"gender":"남","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":78000},{"date":"2026-03-15","birth_year":1986,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1985,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1995,"gender":"남","product":"천안 쌍용동에서 즐기는 2:2 로테이션 와인파티_E10","amount":79000},{"date":"2026-03-15","birth_year":1986,"gender":"여","product":"3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":49000},{"date":"2026-03-15","birth_year":1990,"gender":"여","product":"21일 남성 조기마감! 3040 천안에서 즐기는 2:2 로테이션 와인파티_E11","amount":49000},{"date":"2026-03-15","birth_year":1985,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-15","birth_year":1990,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":60000},{"date":"2026-03-15","birth_year":1993,"gender":"남","product":"대구 동성로에서 즐기는 2:2 로테이션 와인파티_E14","amount":79000},{"date":"2026-03-15","birth_year":1994,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-15","birth_year":1994,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-15","birth_year":1987,"gender":"여","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-14","birth_year":1994,"gender":"남","product":"천안 쌍용동에서 즐기는 2:2 로테이션 와인파티_E10","amount":79000},{"date":"2026-03-14","birth_year":1985,"gender":"여","product":"3040 수원 행리단길에서 즐기는 2:2 로테이션 와인파티_E07","amount":49000},{"date":"2026-03-14","birth_year":1983,"gender":"남","product":"금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-14","birth_year":1993,"gender":"남","product":"수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":79000},{"date":"2026-03-14","birth_year":1986,"gender":"남","product":"[Pre-White Day] 3040 인천 구월에서 즐기는 2:2 로테이션 와인파티_E05","amount":79000},{"date":"2026-03-14","birth_year":1998,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-14","birth_year":1996,"gender":"여","product":"[Pre-White Day] 14일 여성 2자리! 당일 신청 가능! 부산에서 즐기는 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-14","birth_year":1985,"gender":"남","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-14","birth_year":1993,"gender":"여","product":"[Pre-White Day] 14일 여성 2자리! 당일 신청 가능! 부산에서 즐기는 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-14","birth_year":1993,"gender":"여","product":"[Pre-White Day] 14일 여성 마지막 1자리! 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":60000},{"date":"2026-03-14","birth_year":1994,"gender":"여","product":"[벚꽃 시즌] 금,토 압구정에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-14","birth_year":1989,"gender":"남","product":"[Pre-White Day] 3040 수원 행리단길에서 즐기는 2:2 로테이션 와인파티_E07","amount":79000},{"date":"2026-03-14","birth_year":1998,"gender":"여","product":"[Pre-White Day] 인천에서 즐기는 2:2 로테이션 와인파티_E04","amount":44000},{"date":"2026-03-14","birth_year":1989,"gender":"여","product":"[Pre-White Day] 14일 여성 마지막 1자리! 금,토 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-14","birth_year":1996,"gender":"여","product":"[Pre-White Day] 14일 여성 2자리! 당일 신청 가능! 부산에서 즐기는 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-14","birth_year":1994,"gender":"남","product":"[Pre-White Day] 14일 마감임박! 당일신청가능! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":78000},{"date":"2026-03-14","birth_year":1995,"gender":"여","product":"[Pre-White Day] 인천에서 즐기는 2:2 로테이션 와인파티_E04","amount":44000},{"date":"2026-03-14","birth_year":1994,"gender":"여","product":"[Pre-White Day] 14일 마감임박! 당일신청가능! 대전에서 즐기는 2:2 로테이션 와인파티_E08","amount":38000},{"date":"2026-03-14","birth_year":1990,"gender":"남","product":"[Pre-White Day] 수원에서 즐기는 2:2 로테이션 와인파티_E06","amount":77000},{"date":"2026-03-14","birth_year":1992,"gender":"남","product":"[Pre-White Day] 인천에서 즐기는 2:2 로테이션 와인파티_E04","amount":44000},{"date":"2026-03-13","birth_year":1983,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 당일신청가능!  압구정 3040    2:2 로테이션 와인파티_E19","amount":70000},{"date":"2026-03-13","birth_year":1983,"gender":"남","product":"[Pre-White Day] 14일 남성 마감! 여성 단 2자리! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-13","birth_year":1997,"gender":"남","product":"[Pre-White Day] 대구 동성로에서 즐기는 2:2 로테이션 와인파티_E14","amount":79000},{"date":"2026-03-13","birth_year":1994,"gender":"여","product":"[Pre-White Day] 역삼 2030 시그널쿡 싱글끼리 요리를 한다면?_N01","amount":65000},{"date":"2026-03-13","birth_year":1992,"gender":"여","product":"[Pre-White Day] 21일 남성 조기마감! 3040 천안에서 즐기는 2:2 로테이션 와인파티_E11","amount":49000},{"date":"2026-03-13","birth_year":1993,"gender":"남","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":158000},{"date":"2026-03-13","birth_year":1994,"gender":"여","product":"[Pre-White Day] 13일 마감임박! 당일신청가능!  압구정 3040    2:2 로테이션 와인파티_E19","amount":65000},{"date":"2026-03-13","birth_year":1992,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":44000},{"date":"2026-03-13","birth_year":1993,"gender":"여","product":"[Pre-White Day] 13일 마감임박! 당일신청가능! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-13","birth_year":1993,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":44000},{"date":"2026-03-13","birth_year":1993,"gender":"여","product":"[Pre-White Day] 14일 남성 마감! 여성 단 2자리! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":64000},{"date":"2026-03-13","birth_year":2000,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":44000},{"date":"2026-03-13","birth_year":1987,"gender":"남","product":"[Pre-White Day] 3040 광주에서 즐기는 2:2 로테이션 와인파티_E13","amount":73000},{"date":"2026-03-13","birth_year":1987,"gender":"여","product":"[Pre-White Day] 14일 남성 마감! 여성 단 2자리! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":64000},{"date":"2026-03-13","birth_year":1991,"gender":"여","product":"[Pre-White Day] 13일 마감임박! 당일신청가능!  압구정 3040    2:2 로테이션 와인파티_E19","amount":65000},{"date":"2026-03-13","birth_year":1992,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 당일신청가능! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-13","birth_year":1993,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 당일신청가능! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-13","birth_year":1984,"gender":"남","product":"[Pre-White Day] 14일 남녀 마감 임박! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-13","birth_year":1991,"gender":"여","product":"[Pre-White Day] 13일 마감임박! 당일신청가능!  압구정 3040    2:2 로테이션 와인파티_E19","amount":65000},{"date":"2026-03-13","birth_year":1991,"gender":"남","product":"[Pre-White Day] 천안 쌍용동에서 즐기는 2:2 로테이션 와인파티_E10","amount":78000},{"date":"2026-03-13","birth_year":1998,"gender":"여","product":"[Pre-White Day] 14일 남성 조기마감!! 여성 2자리! 부산에서 즐기는 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-13","birth_year":1995,"gender":"남","product":"[Pre-White Day] 울산 2030 삼산동 2:2 로테이션 와인파티_E18","amount":79000},{"date":"2026-03-12","birth_year":1999,"gender":"여","product":"[Pre-White Day] 13일 마감임박! 당일신청가능! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-12","birth_year":1994,"gender":"남","product":"[Pre-White Day] 인천에서 즐기는 2:2 로테이션 와인파티_E04","amount":79000},{"date":"2026-03-12","birth_year":1982,"gender":"남","product":"[Pre-White Day] 14일 남녀 마감 임박! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-12","birth_year":1992,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":44000},{"date":"2026-03-12","birth_year":1993,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":39000},{"date":"2026-03-12","birth_year":1993,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 당일신청가능! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":74000},{"date":"2026-03-12","birth_year":1990,"gender":"여","product":"[Pre-White Day] 대구 3040 대구에서 즐기는 2:2 로테이션 와인파티_E15","amount":49000},{"date":"2026-03-12","birth_year":1991,"gender":"남","product":"[Pre-White Day] 울산 2030 삼산동 2:2 로테이션 와인파티_E18","amount":79000},{"date":"2026-03-12","birth_year":1992,"gender":"남","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":74000},{"date":"2026-03-12","birth_year":1998,"gender":"여","product":"[Pre-White Day] 14일 남성 조기마감!! 여성 2자리! 부산에서 즐기는 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-12","birth_year":1993,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":44000},{"date":"2026-03-12","birth_year":1987,"gender":"남","product":"[Pre-White Day]  3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":75000},{"date":"2026-03-12","birth_year":1984,"gender":"남","product":"[Pre-White Day]  3040 대전에서 즐기는 2:2 로테이션 와인파티_E09","amount":79000},{"date":"2026-03-12","birth_year":1986,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 당일신청가능!  압구정 3040    2:2 로테이션 와인파티_E19","amount":65000},{"date":"2026-03-12","birth_year":1998,"gender":"여","product":"[Pre-White Day] 14일 남성 조기마감!! 여성 2자리! 부산에서 즐기는 2:2로테이션 파티_E16","amount":44000},{"date":"2026-03-12","birth_year":1999,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 광주에서 즐기는 2:2 로테이션 와인파티_E12","amount":44000},{"date":"2026-03-12","birth_year":1991,"gender":"여","product":"[Pre-White Day] 14일 남녀 마감 임박! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-12","birth_year":1983,"gender":"남","product":"[Pre-White Day] 14일 남녀 마감 임박! 청담에서 즐기는 3040 2:2 로테이션 와인파티_E03","amount":65000},{"date":"2026-03-12","birth_year":1992,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":77000},{"date":"2026-03-12","birth_year":1992,"gender":"남","product":"[Pre-White Day] 13일 마감임박! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":79000},{"date":"2026-03-12","birth_year":1994,"gender":"여","product":"[Pre-White Day] 13일 마감임박! 금요일 이태원에서 즐기는 2:2 로테이션 와인파티_E02","amount":44000},{"date":"2026-03-12","birth_year":1989,"gender":"남","product":"[Pre-White Day] 대구 3040 대구에서 즐기는 2:2 로테이션 와인파티_E15","amount":79000},{"date":"2026-03-12","birth_year":1992,"gender":"여","product":"[Pre-White Day] 부산 3040 부산 해운대에서 즐기는 2:2 로테이션 와인파티_E17","amount":49000},{"date":"2026-03-12","birth_year":1995,"gender":"여","product":"[Pre-White Day]  토요일 이태원에서 즐기는 2:2 로테이션 와인파티_E01","amount":44000},{"date":"2026-03-11","birth_year":1988,"gender":"남","product":"[Pre-White Day] 3040 수원 행리단길에서 즐기는 2:2 로테이션 와인파티_E07","amount":79000},{"date":"2026-03-11","birth_year":1988,"gender":"남","product":"[Pre-White Day] 21일 남성 조기마감! 3040 천안에서 즐기는 2:2 로테이션 와인파티_E11","amount":79000},{"date":"2026-03-11","birth_year":1988,"gender":"남","product":"[Pre-White Day] 역삼 2030 시그널쿡 싱글끼리 요리를 한다면?_N01","amount":65000}];
+
+const AGE_GROUPS = [
+  { label: '82~84년생', min: 1982, max: 1984 },
+  { label: '85~87년생', min: 1985, max: 1987 },
+  { label: '88~90년생', min: 1988, max: 1990 },
+  { label: '91~93년생', min: 1991, max: 1993 },
+  { label: '94~96년생', min: 1994, max: 1996 },
+  { label: '97~99년생', min: 1997, max: 1999 },
+  { label: '00~02년생', min: 2000, max: 2002 },
+];
+
+// State
+let state = {
+  from: '2026-03-11',
+  to: '2026-03-19',
+  gender: 'all',
+  ageGroups: new Set(AGE_GROUPS.map(g => g.label))
+};
+
+function getGroupLabel(by) {
+  for (const g of AGE_GROUPS) if (by >= g.min && by <= g.max) return g.label;
+  return null;
+}
+
+function getFiltered() {
+  return RAW.filter(r => {
+    if (r.date < state.from || r.date > state.to) return false;
+    if (state.gender === '남' && r.gender !== '남') return false;
+    if (state.gender === '여' && r.gender !== '여') return false;
+    const gl = getGroupLabel(r.birth_year);
+    if (!gl || !state.ageGroups.has(gl)) return false;
+    return true;
+  });
+}
+
+// Build age checks
+function buildAgeChecks() {
+  const el = document.getElementById('ageChecks');
+  el.innerHTML = '';
+  AGE_GROUPS.forEach(g => {
+    const total = RAW.filter(r => r.birth_year >= g.min && r.birth_year <= g.max).length;
+    const item = document.createElement('label');
+    item.className = 'age-check-item';
+    item.innerHTML = `
+      <input type="checkbox" value="${g.label}" ${state.ageGroups.has(g.label) ? 'checked' : ''}>
+      <div class="check-box"></div>
+      <span class="check-label">${g.label}</span>
+      <span class="check-count">${total}</span>
+    `;
+    item.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.checked) state.ageGroups.add(g.label);
+      else state.ageGroups.delete(g.label);
+      render();
+    });
+    el.appendChild(item);
+  });
+}
+
+// Render butterfly
+function renderButterfly(data) {
+  const el = document.getElementById('butterfly');
+  el.innerHTML = '';
+  const maxVal = Math.max(1, ...AGE_GROUPS.map(g => {
+    const inGroup = data.filter(r => getGroupLabel(r.birth_year) === g.label);
+    return Math.max(
+      inGroup.filter(r => r.gender === '남').length,
+      inGroup.filter(r => r.gender === '여').length
+    );
+  }));
+  const BAR_MAX = 120;
+
+  AGE_GROUPS.forEach(g => {
+    const inGroup = data.filter(r => getGroupLabel(r.birth_year) === g.label);
+    const m = inGroup.filter(r => r.gender === '남').length;
+    const f = inGroup.filter(r => r.gender === '여').length;
+    const mW = Math.max(2, Math.round((m / maxVal) * BAR_MAX));
+    const fW = Math.max(2, Math.round((f / maxVal) * BAR_MAX));
+    const row = document.createElement('div');
+    row.className = 'bf-row';
+    row.innerHTML = `
+      <div class="bf-age">${g.label.replace('년생','')}</div>
+      <div class="bf-side-m">
+        ${m > 0 ? `<span class="bf-num m">${m}</span>` : '<span class="bf-num m" style="color:#ddd">0</span>'}
+        <div class="${m > 0 ? 'bar-m' : 'no-data-bar'}" style="width:${m > 0 ? mW : 4}px"></div>
+      </div>
+      <div class="bf-side-f">
+        <div class="${f > 0 ? 'bar-f' : 'no-data-bar'}" style="width:${f > 0 ? fW : 4}px"></div>
+        ${f > 0 ? `<span class="bf-num f">${f}</span>` : '<span class="bf-num f" style="color:#ddd">0</span>'}
+      </div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// Render stacked
+function renderStacked(data) {
+  const el = document.getElementById('stacked');
+  el.innerHTML = '';
+  const maxTotal = Math.max(1, ...AGE_GROUPS.map(g => data.filter(r => getGroupLabel(r.birth_year) === g.label).length));
+
+  AGE_GROUPS.forEach(g => {
+    const inGroup = data.filter(r => getGroupLabel(r.birth_year) === g.label);
+    const m = inGroup.filter(r => r.gender === '남').length;
+    const f = inGroup.filter(r => r.gender === '여').length;
+    const tot = m + f;
+    const mPct = tot > 0 ? (m / tot * 100).toFixed(0) : 0;
+    const fPct = tot > 0 ? (100 - mPct) : 0;
+    const barW = tot > 0 ? Math.max(4, Math.round((tot / maxTotal) * 100)) : 4;
+
+    const row = document.createElement('div');
+    row.className = 'sc-row';
+    row.innerHTML = `
+      <div class="sc-top">
+        <span class="sc-age">${g.label}</span>
+        <span class="sc-counts">${m}M · ${f}F · 합계 ${tot}</span>
+      </div>
+      <div class="sc-bar-wrap" style="width:${barW}%">
+        <div class="sc-m" style="width:${mPct}%"></div>
+        <div class="sc-f" style="width:${fPct}%"></div>
+      </div>
+      <div class="sc-pct-row">
+        <span class="sc-pct m">${mPct}%</span>
+        <span class="sc-pct f">${fPct}%</span>
+      </div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// Render trend (simple canvas bar chart by date)
+function renderTrend(data) {
+  const canvas = document.getElementById('trendCanvas');
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.clientWidth || 800;
+  canvas.height = 140;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Get all dates in range
+  const dates = [];
+  let d = new Date(state.from);
+  const end = new Date(state.to);
+  while (d <= end) {
+    dates.push(d.toISOString().slice(0, 10));
+    d = new Date(d.getTime() + 86400000);
+  }
+
+  if (dates.length === 0) return;
+
+  const countByDate = {};
+  const mByDate = {}, fByDate = {};
+  dates.forEach(dt => { countByDate[dt] = 0; mByDate[dt] = 0; fByDate[dt] = 0; });
+  data.forEach(r => {
+    if (countByDate[r.date] !== undefined) {
+      countByDate[r.date]++;
+      if (r.gender === '남') mByDate[r.date]++;
+      else fByDate[r.date]++;
+    }
+  });
+
+  const maxCount = Math.max(1, ...dates.map(dt => countByDate[dt]));
+  const W = canvas.width, H = canvas.height;
+  const padL = 32, padR = 12, padT = 10, padB = 28;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const barW = Math.max(4, Math.floor(chartW / dates.length) - 3);
+
+  // Grid
+  ctx.strokeStyle = '#f0f0f0';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + chartH * (1 - i / 4);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = '#bbb';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxCount * i / 4), padL - 4, y + 3);
+  }
+
+  dates.forEach((dt, i) => {
+    const x = padL + (chartW / dates.length) * i + (chartW / dates.length - barW) / 2;
+    const total = countByDate[dt];
+    const m = mByDate[dt], f = fByDate[dt];
+    const totalH = Math.round((total / maxCount) * chartH);
+    const mH = total > 0 ? Math.round((m / total) * totalH) : 0;
+    const fH = totalH - mH;
+    const baseY = padT + chartH;
+
+    // male part
+    if (mH > 0) {
+      ctx.fillStyle = 'rgba(74,127,193,0.7)';
+      ctx.fillRect(x, baseY - totalH, barW, mH);
+    }
+    // female part
+    if (fH > 0) {
+      ctx.fillStyle = 'rgba(193,106,122,0.7)';
+      ctx.fillRect(x, baseY - fH, barW, fH);
+    }
+    if (total === 0) {
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(x, baseY - 2, barW, 2);
+    }
+
+    // date label
+    ctx.fillStyle = '#aaa';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const label = dt.slice(5); // MM-DD
+    ctx.fillText(label, x + barW / 2, H - 6);
+  });
+}
+
+// Render table
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  let grandTotal = 0, grandM = 0, grandF = 0;
+
+  AGE_GROUPS.forEach(g => {
+    const inGroup = data.filter(r => getGroupLabel(r.birth_year) === g.label);
+    const m = inGroup.filter(r => r.gender === '남').length;
+    const f = inGroup.filter(r => r.gender === '여').length;
+    const tot = m + f;
+    if (tot === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="age-col">${g.label}</td><td class="num mval">0</td><td class="num fval">0</td><td class="num">0</td><td class="ratio-cell"><span style="color:#ccc;font-size:12px">-</span></td>`;
+      tbody.appendChild(tr);
+    } else {
+      grandTotal += tot; grandM += m; grandF += f;
+      const mPct = Math.round(m / tot * 100);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="age-col">${g.label}</td>
+        <td class="num mval">${m}</td>
+        <td class="num fval">${f}</td>
+        <td class="num">${tot}</td>
+        <td class="ratio-cell">
+          <span style="font-size:11px;color:#999">${mPct}% : ${100 - mPct}%</span>
+          <div class="ratio-bar-wrap"><div class="ratio-fill" style="width:${mPct}%"></div></div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  });
+
+  // Total row
+  const tfoot = document.createElement('tr');
+  tfoot.style.background = '#fafafa';
+  tfoot.style.fontWeight = '700';
+  const mPct = grandTotal > 0 ? Math.round(grandM / grandTotal * 100) : 0;
+  tfoot.innerHTML = `
+    <td class="age-col">합계</td>
+    <td class="num mval">${grandM}</td>
+    <td class="num fval">${grandF}</td>
+    <td class="num">${grandTotal}</td>
+    <td class="ratio-cell">
+      <span style="font-size:11px;color:#999">${mPct}% : ${100 - mPct}%</span>
+      <div class="ratio-bar-wrap"><div class="ratio-fill" style="width:${mPct}%"></div></div>
+    </td>
+  `;
+  tbody.appendChild(tfoot);
+}
+
+// Render KPIs
+function renderKPI(data) {
+  const total = data.length;
+  const m = data.filter(r => r.gender === '남').length;
+  const f = data.filter(r => r.gender === '여').length;
+
+  document.getElementById('kTotal').textContent = total;
+  document.getElementById('kTotalSub').textContent = `${state.from} ~ ${state.to}`;
+  document.getElementById('kMale').textContent = m;
+  document.getElementById('kMalePct').textContent = total > 0 ? `${(m/total*100).toFixed(1)}%` : '-';
+  document.getElementById('kFemale').textContent = f;
+  document.getElementById('kFemalePct').textContent = total > 0 ? `${(f/total*100).toFixed(1)}%` : '-';
+
+  // Top age group
+  let topG = null, topCount = 0;
+  AGE_GROUPS.forEach(g => {
+    const cnt = data.filter(r => getGroupLabel(r.birth_year) === g.label).length;
+    if (cnt > topCount) { topCount = cnt; topG = g; }
+  });
+  document.getElementById('kTopAge').textContent = topG ? topG.label.replace('년생','') : '-';
+  document.getElementById('kTopAgeSub').textContent = topG ? `${topCount}명 (최다)` : '-';
+}
+
+// Render sidebar summary
+function renderSidebar(data) {
+  const total = data.length;
+  const m = data.filter(r => r.gender === '남').length;
+  const f = data.filter(r => r.gender === '여').length;
+  document.getElementById('sidebarSummary').innerHTML = `
+    <div class="summary-row"><span class="summary-key">총 주문</span><span class="summary-val">${total}건</span></div>
+    <div class="summary-row"><span class="summary-key">남성</span><span class="summary-val m">${m}명</span></div>
+    <div class="summary-row"><span class="summary-key">여성</span><span class="summary-val f">${f}명</span></div>
+  `;
+}
+
+// Render filter tags
+function renderTags() {
+  const el = document.getElementById('filterTags');
+  el.innerHTML = '';
+  const gLabel = state.gender === 'all' ? '전체' : state.gender === '남' ? '남성' : '여성';
+  const dateRange = `${state.from.slice(5)} ~ ${state.to.slice(5)}`;
+  [dateRange, gLabel, `${state.ageGroups.size}개 연령대`].forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = t;
+    el.appendChild(span);
+  });
+}
+
+function render() {
+  const data = getFiltered();
+  renderKPI(data);
+  renderButterfly(data);
+  renderStacked(data);
+  renderTrend(data);
+  renderTable(data);
+  renderSidebar(data);
+  renderTags();
+  syncAgeChecks();
+}
+
+function syncAgeChecks() {
+  document.querySelectorAll('#ageChecks input[type=checkbox]').forEach(cb => {
+    cb.checked = state.ageGroups.has(cb.value);
+  });
+}
+
+// Event listeners
+document.getElementById('dateFrom').addEventListener('change', e => {
+  state.from = e.target.value;
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+  render();
+});
+document.getElementById('dateTo').addEventListener('change', e => {
+  state.to = e.target.value;
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+  render();
+});
+
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const days = btn.dataset.range;
+    const today = new Date('2026-03-19');
+    if (days === 'all') {
+      state.from = '2026-03-11';
+      state.to = '2026-03-19';
+    } else {
+      const from = new Date(today.getTime() - (parseInt(days) - 1) * 86400000);
+      state.from = from.toISOString().slice(0, 10);
+      state.to = '2026-03-19';
+    }
+    document.getElementById('dateFrom').value = state.from;
+    document.getElementById('dateTo').value = state.to;
+    render();
+  });
+});
+
+// Gender buttons
+document.getElementById('gAll').addEventListener('click', () => {
+  state.gender = 'all';
+  document.getElementById('gAll').className = 'filter-btn active-all';
+  document.getElementById('gMale').className = 'filter-btn';
+  document.getElementById('gFemale').className = 'filter-btn';
+  render();
+});
+document.getElementById('gMale').addEventListener('click', () => {
+  state.gender = '남';
+  document.getElementById('gAll').className = 'filter-btn';
+  document.getElementById('gMale').className = 'filter-btn active-m';
+  document.getElementById('gFemale').className = 'filter-btn';
+  render();
+});
+document.getElementById('gFemale').addEventListener('click', () => {
+  state.gender = '여';
+  document.getElementById('gAll').className = 'filter-btn';
+  document.getElementById('gMale').className = 'filter-btn';
+  document.getElementById('gFemale').className = 'filter-btn active-f';
+  render();
+});
+
+// Init
+buildAgeChecks();
+render();
+
+window.addEventListener('resize', () => {
+  renderTrend(getFiltered());
+});
+</script>
+</body>
+</html>
